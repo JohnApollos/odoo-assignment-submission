@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bid_selection_wizard_form" model="ir.ui.view">
+        <field name="name">bid.selection.wizard.form</field>
+        <field name="model">bid.selection.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select Winning Bid">
+                <group>
+                    <field name="rfq_id" readonly="1"/>
+                    <field name="bid_id" options="{'no_open': True, 'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_select_winning_bid" type="object" string="Select Winning Bid" class="oe_highlight"/>
+                    <button special="cancel" string="Cancel" class="oe_link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_order_form_inherit_vendors" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.vendors</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="replace">
+                <field name="vendor_ids" widget="many2many_tags" string="Vendors"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Bids">
+                    <field name="bid_ids"
+                           widget="one2many"
+                           context="{'default_rfq_id': id}"
+                           domain="[('rfq_id', '=', id)]"
+                           options="{'always_open': True, 'no_create': False, 'no_edit': False, 'no_delete': False}"
+                           views="{'list': 'rfq_multi_vendor.purchase_bid_inline_tree', 'form': 'rfq_multi_vendor.purchase_bid_inline_form'}"/>
+                </page>
+                <page string="Debug">
+                    <group>
+                        <field name="debug_has_winning_bid"/>
+                        <field name="debug_bids_edited"/>
+                        <field name="debug_bid_count"/>
+                        <field name="debug_select_winning_bid_visible"/>
+                    </group>
+                </page>
+            </xpath>
+            <xpath expr="//button[@name='action_view_invoice']" position="before">
+                <button name="action_select_winning_bid" type="object" string="Select Winning Bid" class="oe_highlight"
+                        invisible="not bid_ids or (has_winning_bid and not bids_edited)"/>
+                <button name="action_create_purchase_order" type="object" string="Create Purchase Order" class="oe_highlight"
+                        invisible="[('state', '!=', 'sent'), ('has_winning_bid', '=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_purchase_bid" model="ir.actions.act_window">
+        <field name="name">Bids</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.bid</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="purchase_bid_tree"/>
+        <field name="domain">[]</field>
+        <field name="context">{'no_create': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bids can only be created from within an RFQ.
+            </p>
+        </field>
+    </record>
+    <menuitem id="menu_purchase_bid"
+              name="Bids"
+              parent="purchase.menu_purchase_root"
+              action="action_purchase_bid"
+              sequence="99"/>
+</odoo>

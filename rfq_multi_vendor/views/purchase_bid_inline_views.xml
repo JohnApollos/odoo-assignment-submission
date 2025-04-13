@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inline List View for Bids in RFQ Form -->
+    <record id="purchase_bid_inline_tree" model="ir.ui.view">
+        <field name="name">purchase.bid.inline.tree</field>
+        <field name="model">purchase.bid</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list string="Bids" editable="bottom">
+                <field name="vendor_id" options="{'no_open': True, 'no_create': True}"/>
+                <field name="bid_amount"/>
+                <field name="currency_id" options="{'no_open': True, 'no_create': True}" groups="base.group_multi_currency"/>
+                <field name="bid_date"/>
+                <field name="is_winning_bid"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Inline Form View for Bids in RFQ Form -->
+    <record id="purchase_bid_inline_form" model="ir.ui.view">
+        <field name="name">purchase.bid.inline.form</field>
+        <field name="model">purchase.bid</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Bid">
+                <group>
+                    <field name="rfq_id" readonly="1" options="{'no_open': True, 'no_create': True}"/>
+                    <field name="vendor_id" options="{'no_open': True, 'no_create': True}"/>
+                    <field name="bid_amount"/>
+                    <field name="currency_id" options="{'no_open': True, 'no_create': True}" groups="base.group_multi_currency"/>
+                    <field name="bid_date"/>
+                </group>
+            </form>
+        </field>
+    </record>
+</odoo>

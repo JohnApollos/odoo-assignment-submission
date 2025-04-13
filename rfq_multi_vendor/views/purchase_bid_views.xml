@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List view for purchase.bid -->
+    <record id="purchase_bid_tree" model="ir.ui.view">
+        <field name="name">purchase.bid.list</field>
+        <field name="model">purchase.bid</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list string="Bids" create="0" edit="0">
+                <field name="vendor_id" options="{'no_open': True, 'no_create': True}"/>
+                <field name="bid_amount"/>
+                <field name="currency_id" options="{'no_open': True, 'no_create': True}" groups="base.group_multi_currency"/>
+                <field name="bid_date"/>
+                <field name="is_winning_bid"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form view for purchase.bid -->
+    <record id="purchase_bid_form" model="ir.ui.view">
+        <field name="name">purchase.bid.form</field>
+        <field name="model">purchase.bid</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Bid" create="0" edit="0">
+                <sheet>
+                    <group>
+                        <field name="rfq_id" options="{'no_open': True, 'no_create': True}"/>
+                        <field name="vendor_id" options="{'no_open': True, 'no_create': True}"/>
+                        <field name="bid_date"/>
+                        <field name="currency_id" options="{'no_open': True, 'no_create': True}" groups="base.group_multi_currency"/>
+                        <field name="bid_amount"/>
+                    </group>
+                    <field name="notes" placeholder="Additional notes..."/>
+                    <field name="attachment_ids" widget="many2many_binary"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,96 @@
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
+
+
+class PurchaseOrder(models.Model):
+    _inherit = 'purchase.order'
+
+    vendor_ids = fields.Many2many('res.partner', string='Vendors', domain=[('supplier_rank', '>', 0)])
+    bid_ids = fields.One2many('purchase.bid', 'order_id', string='Bids')
+    bids_edited = fields.Boolean(compute='_compute_bids_edited', default=False)
+    debug_has_winning_bid = fields.Boolean(compute='_compute_has_winning_bid', string='Has Winning Bid (Debug)')
+    debug_bid_count = fields.Integer(compute='_compute_bid_count', string='Bid Count (Debug)')
+
+    @api.depends('vendor_ids')
+    def _compute_partner_id(self):
+        for order in self:
+            if order.vendor_ids:
+                order.partner_id = order.vendor_ids[:1]
+            else:
+                # Set a default vendor if vendor_ids is empty
+                default_vendor = self.env['res.partner'].search([('supplier_rank', '>', 0)], limit=1)
+                order.partner_id = default_vendor if default_vendor else False
+                if not default_vendor:
+                    raise ValidationError("No vendors available. Please create a vendor with a supplier rank greater than 0.")
+
+    @api.depends('bid_ids')
+    def _compute_bids_edited(self):
+        for order in self:
+            order.bids_edited = len(order.bid_ids) > 0
+
+    @api.depends('bid_ids.is_winning_bid')
+    def _compute_has_winning_bid(self):
+        for order in self:
+            winning_bids = order.bid_ids.filtered(lambda b: b.is_winning_bid)
+            print(f"RFQ {order._name}: Bids exist, has_winning_bid={bool(winning_bids)}, winning bids: {winning_bids}")
+            order.debug_has_winning_bid = bool(winning_bids)
+
+    @api.depends('bid_ids')
+    def _compute_bid_count(self):
+        for order in self:
+            order.debug_bid_count = len(order.bid_ids)
+
+    def _compute_select_winning_bid_button_visibility(self):
+        for order in self:
+            visible = bool(order.bid_ids) and not order.debug_has_winning_bid and not order.bids_edited
+            print(f"RFQ {order._name}: Select Winning Bid button visibility - bid_ids: {bool(order.bid_ids)}, has_winning_bid: {order.debug_has_winning_bid}, bids_edited: {order.bids_edited}, visible: {visible}")
+            order.select_winning_bid_button_visible = visible
+
+    select_winning_bid_button_visible = fields.Boolean(compute='_compute_select_winning_bid_button_visibility')
+
+    def action_create_purchase_order(self):
+        self.ensure_one()
+        if not self.debug_has_winning_bid:
+            raise ValidationError("Please select a winning bid before creating a purchase order.")
+        winning_bid = self.bid_ids.filtered(lambda b: b.is_winning_bid)
+        if not winning_bid:
+            raise ValidationError("No winning bid found.")
+        if len(winning_bid) > 1:
+            raise ValidationError("Multiple winning bids found. Please ensure only one bid is marked as the winner.")
+        # Create a new purchase order with the winning bid's vendor
+        purchase_order = self.env['purchase.order'].create({
+            'partner_id': winning_bid.partner_id.id,
+            'origin': self.name,
+            'order_line': [(0, 0, {
+                'product_id': line.product_id.id,
+                'product_qty': line.product_qty,
+                'price_unit': winning_bid.bid_amount,
+            }) for line in self.order_line],
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Purchase Order',
+            'view_mode': 'form',
+            'res_model': 'purchase.order',
+            'res_id': purchase_order.id,
+            'target': 'current',
+        }
+
+    def action_select_winning_bid(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Select Winning Bid',
+            'view_mode': 'form',
+            'res_model': 'bid.selection.wizard',
+            'target': 'new',
+            'context': {'default_order_id': self.id},
+        }
+
+    def action_send_by_email(self):
+        self.ensure_one()
+        if self.debug_has_winning_bid:
+            winning_bid = self.bid_ids.filtered(lambda b: b.is_winning_bid)
+            if winning_bid:
+                self = self.with_context(email_to=winning_bid.partner_id.email)
+        return super(PurchaseOrder, self).action_send_by_email()
